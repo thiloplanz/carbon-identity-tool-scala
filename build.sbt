@@ -31,6 +31,10 @@ libraryDependencies += "org.apache.axis2" % "axis2-adb" % axis2Version
 libraryDependencies += "org.apache.axis2" % "axis2-transport-local" % axis2Version
 libraryDependencies += "org.apache.axis2" % "axis2-transport-http" % axis2Version
 
+libraryDependencies += "commons-codec" % "commons-codec" % "1.10"
+
+libraryDependencies += "org.apache.oltu.oauth2" % "org.apache.oltu.oauth2.client" % "1.0.0"
+
 
 libraryDependencies += ("org.wso2.carbon.identity" % "org.wso2.carbon.identity.oauth.stub" % carbonIdentityVersion
   // exclude the WSO2-modified version of Axis2

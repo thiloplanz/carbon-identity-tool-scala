@@ -17,12 +17,17 @@
 
 package carbonIdentityTool
 
+import java.util
+
 import org.apache.axis2.transport.http.HTTPConstants
 import org.apache.axis2.transport.http.HttpTransportProperties.Authenticator
+import org.apache.commons.httpclient.{HttpContentTooLargeException, HttpClient}
+import org.apache.commons.httpclient.methods.GetMethod
+import org.apache.oltu.oauth2.client.request.{OAuthBearerClientRequest, OAuthClientRequest}
 import org.wso2.carbon.identity.oauth2.stub.OAuth2TokenValidationServiceStub
 import org.wso2.carbon.identity.oauth2.stub.dto.{OAuth2TokenValidationResponseDTO, OAuth2TokenValidationRequestDTO, OAuth2TokenValidationRequestDTO_OAuth2AccessToken}
 
-class IdentityServiceClient {
+object IdentityServiceClient {
 
   /**
    * Uses the Carbon IdentityServer SOAP API to verify an access token.
@@ -63,5 +68,60 @@ class IdentityServiceClient {
 
     return Left(resp.getErrorMsg)
   }
+
+
+  val defaultBaseUrl = "https://127.0.0.1:9443/oauth2"
+
+  /**
+   * returns the URI that the user needs to go to to authorize the application
+   * (create an access token for it)
+   */
+
+  def getAuthorizationUri(clientId: String, scope: String, baseUrl: String = defaultBaseUrl): String = OAuthClientRequest
+    .authorizationLocation(baseUrl+"/authorize")
+    .setClientId(clientId)
+    .setResponseType("token")
+    .setScope(scope)
+    .setRedirectURI("about:blank")
+    .buildQueryMessage().getLocationUri;
+
+  /**
+   * retrieves the OpenID user profile
+   */
+  // TODO: parse the JSON String into an appropriate structure (Map?)
+  def getOpenIdUserProfile(accessToken: String, baseUrl: String = defaultBaseUrl) : String
+    = get(new OAuthBearerClientRequest(baseUrl + "/userinfo?schema=openid").setAccessToken(accessToken).buildHeaderMessage())
+
+
+  // use Commons HttpClient 3, which is a bit outdated, because Axis2 is using that as well
+  private def get(request: OAuthClientRequest): String = {
+    val client = new HttpClient();
+    val get = new GetMethod(request.getLocationUri)
+
+
+    import scala.collection.JavaConversions.mapAsScalaMap
+
+    try {
+      for((k,v) <- request.getHeaders){
+         get.setRequestHeader(k, v)
+      }
+      val statusCode = client.executeMethod(get);
+      if (statusCode != 200) {
+        val errorMessage = "failed to get " + request.getLocationUri + ", HTTP status " + statusCode + " " + get.getStatusLine
+        try {
+          throw new IllegalArgumentException( errorMessage + "\n" + get.getResponseBodyAsString(2000))
+        }
+        catch {
+          case e: HttpContentTooLargeException => throw new IllegalArgumentException(errorMessage)
+          case e: Exception => throw e
+        }
+      }
+      return get.getResponseBodyAsString
+    }
+    finally {
+      get.releaseConnection()
+    }
+  }
+
 
 }
