@@ -36,10 +36,9 @@ object IdentityServiceClient {
    */
 
 
-  def verifyAccessToken(token: String) : Either[String, OAuth2TokenValidationResponseDTO] = {
+  def verifyAccessToken(credentials: IdentityServiceAdminCredentials, token: OAuthAccessToken) : Either[String, OAuth2TokenValidationResponseDTO] = {
 
-    // TODO: make URL configurable
-    val stub = new OAuth2TokenValidationServiceStub()
+    val stub = new OAuth2TokenValidationServiceStub(credentials.hostUrl + "services/OAuth2TokenValidationService.OAuth2TokenValidationServiceHttpsSoap12Endpoint/")
     val client = stub._getServiceClient();
     val options = client.getOptions();
     options.setCallTransportCleanup(true);
@@ -47,15 +46,14 @@ object IdentityServiceClient {
 
     val accessToken =  new OAuth2TokenValidationRequestDTO_OAuth2AccessToken();
     accessToken.setTokenType("bearer");
-    accessToken.setIdentifier(token);
+    accessToken.setIdentifier(token.token);
 
     val request = new OAuth2TokenValidationRequestDTO()
     request.setAccessToken(accessToken);
 
-    // TODO: make basic auth configurable
     val basicAuth = new Authenticator
-    basicAuth.setUsername("admin")
-    basicAuth.setPassword("admin")
+    basicAuth.setUsername(credentials.username)
+    basicAuth.setPassword(credentials.password)
     basicAuth.setPreemptiveAuthentication(true)
 
     val clientOptions = stub._getServiceClient().getOptions();
@@ -70,14 +68,13 @@ object IdentityServiceClient {
   }
 
 
-  val defaultBaseUrl = "https://127.0.0.1:9443/oauth2"
 
   /**
    * returns the URI that the user needs to go to to authorize the application
    * (create an access token for it)
    */
 
-  def getAuthorizationUri(clientId: String, scope: String, baseUrl: String = defaultBaseUrl): String = OAuthClientRequest
+  def getAuthorizationUri(clientId: String, scope: String, baseUrl: String = "https://127.0.0.1:9443/oauth2"): String = OAuthClientRequest
     .authorizationLocation(baseUrl+"/authorize")
     .setClientId(clientId)
     .setResponseType("token")
@@ -89,8 +86,8 @@ object IdentityServiceClient {
    * retrieves the OpenID user profile
    */
   // TODO: parse the JSON String into an appropriate structure (Map?)
-  def getOpenIdUserProfile(accessToken: String, baseUrl: String = defaultBaseUrl) : String
-    = get(new OAuthBearerClientRequest(baseUrl + "/userinfo?schema=openid").setAccessToken(accessToken).buildHeaderMessage())
+  def getOpenIdUserProfile(accessToken: OAuthAccessToken) : String
+    = get(new OAuthBearerClientRequest(accessToken.baseUrl + "/userinfo?schema=openid").setAccessToken(accessToken.token).buildHeaderMessage())
 
 
   // use Commons HttpClient 3, which is a bit outdated, because Axis2 is using that as well
@@ -124,4 +121,20 @@ object IdentityServiceClient {
   }
 
 
+
+
 }
+
+final class IdentityServiceAdminCredentials
+  (
+    val username: String = "admin",
+    val password: String = "admin",
+    val hostUrl: String =  "https://127.0.0.1:9443/")
+
+
+final class OAuthAccessToken
+  (
+    val token: String,
+    val baseUrl: String = "https://127.0.0.1:9443/oauth2" )
+
+
