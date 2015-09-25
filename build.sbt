@@ -42,3 +42,32 @@ libraryDependencies += ("org.wso2.carbon.identity" % "org.wso2.carbon.identity.o
   exclude("org.apache.axis2.wso2", "axis2-client")
   )
 
+libraryDependencies += ("org.wso2.carbon" % "org.wso2.carbon.um.ws.api" % "4.2.2"
+  // this pulls in much more than a web service client needs, so exclude stuff
+  exclude("org.wso2.carbon", "carbon-kernel")
+  exclude("org.wso2.carbon", "org.wso2.carbon.core")
+  exclude("org.wso2.carbon", "org.wso2.carbon.core.common")
+  exclude("org.wso2.carbon", "org.wso2.carbon.user.mgt.common")
+  exclude("org.wso2.carbon", "org.wso2.carbon.base")
+  exclude("org.wso2.carbon", "org.wso2.carbon.utils")
+  exclude("org.wso2.carbon", "org.wso2.carbon.bootstrap")
+  exclude("org.wso2.carbon", "org.wso2.carbon.queuing")
+  exclude("org.wso2.carbon", "org.wso2.carbon.registry.core")
+  exclude("org.wso2.carbon", "org.wso2.carbon.ndatasource.rdbms")
+  exclude("org.wso2.carbon", "javax.cache.wso2")
+  exclude("org.wso2.carbon", "org.wso2.carbon.um.ws.api.stub")
+  exclude("org.wso2.securevault", "org.wso2.securevault")
+  exclude("org.eclipse.equinox", "org.apache.log4j")
+  exclude("org.eclipse.osgi", "org.eclipse.osgi")
+  exclude("commons-dbcp.wso2", "commons-dbcp")
+  exclude("commons-collections.wso2", "commons-collections")
+
+  // exclude the WSO2-modified version of Axis2
+  exclude("org.apache.axis2.wso2", "axis2")
+  exclude("org.apache.axis2.wso2", "axis2-client")
+  exclude("wsdl4j.wso2", "wsdl4j")
+  )
+
+
+
+

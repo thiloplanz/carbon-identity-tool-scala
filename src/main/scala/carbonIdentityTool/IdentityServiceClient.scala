@@ -17,15 +17,17 @@
 
 package carbonIdentityTool
 
-import java.util
-
 import org.apache.axis2.transport.http.HTTPConstants
 import org.apache.axis2.transport.http.HttpTransportProperties.Authenticator
 import org.apache.commons.httpclient.{HttpContentTooLargeException, HttpClient}
 import org.apache.commons.httpclient.methods.GetMethod
 import org.apache.oltu.oauth2.client.request.{OAuthBearerClientRequest, OAuthClientRequest}
+import org.wso2.carbon.authenticator.stub.AuthenticationAdminStub
 import org.wso2.carbon.identity.oauth2.stub.OAuth2TokenValidationServiceStub
 import org.wso2.carbon.identity.oauth2.stub.dto.{OAuth2TokenValidationResponseDTO, OAuth2TokenValidationRequestDTO, OAuth2TokenValidationRequestDTO_OAuth2AccessToken}
+import org.wso2.carbon.um.ws.api.WSRealmBuilder
+import org.wso2.carbon.user.api.UserRealm
+
 
 object IdentityServiceClient {
 
@@ -68,6 +70,26 @@ object IdentityServiceClient {
   }
 
 
+  /**
+   * start a new session for the Identity Server SOAP API
+   */
+  def loginToAdminServices(credentials: IdentityServiceAdminCredentials) : UserRealm = {
+    val stub = new AuthenticationAdminStub(credentials.hostUrl+"services/AuthenticationAdmin.AuthenticationAdminHttpsSoap12Endpoint/")
+    if (!stub.login(credentials.username, credentials.password, null)){
+      throw new SecurityException("failed to authenticate as admin user");
+    }
+    val cookie : String = stub._getServiceClient().getServiceContext.getProperty(HTTPConstants.COOKIE_STRING).toString;
+    return WSRealmBuilder.createWSRealm(credentials.hostUrl + "services/", cookie, null);
+  }
+
+  /**
+   * Uses the Carbon IdentityServer SOAP API to create a new user
+   */
+  def addUser(realm: UserRealm, user: CarbonIdentityUserInfo, profile: String, password: String, requirePasswordChange: Boolean) {
+      import scala.collection.JavaConversions.mapAsJavaMap
+      val claims : Map[String, String] = if (user.claims == null) Map.empty else user.claims
+      realm.getUserStoreManager.addUser(user.name, password, user.roles, claims , profile, requirePasswordChange )
+  }
 
   /**
    * returns the URI that the user needs to go to to authorize the application
@@ -138,3 +160,10 @@ final class OAuthAccessToken
     val baseUrl: String = "https://127.0.0.1:9443/oauth2" )
 
 
+final class CarbonIdentityUserInfo
+(
+    val name: String,
+    val roles: Array[String],
+    val claims: Map[String, String]
+
+  )
