@@ -17,11 +17,16 @@
 
 package carbonIdentityTool
 
+import javax.servlet.http.HttpServletRequest
+
 import org.apache.axis2.transport.http.HTTPConstants
 import org.apache.axis2.transport.http.HttpTransportProperties.Authenticator
-import org.apache.commons.httpclient.{HttpContentTooLargeException, HttpClient}
-import org.apache.commons.httpclient.methods.GetMethod
+import org.apache.commons.httpclient.{HttpMethod, HttpClient}
+import org.apache.commons.httpclient.methods.{StringRequestEntity, PostMethod, GetMethod}
 import org.apache.oltu.oauth2.client.request.{OAuthBearerClientRequest, OAuthClientRequest}
+import org.apache.oltu.oauth2.client.response.OAuthAuthzResponse
+import org.apache.oltu.oauth2.common.message.types.GrantType
+import org.json.JSONObject
 import org.wso2.carbon.authenticator.stub.AuthenticationAdminStub
 import org.wso2.carbon.identity.oauth2.stub.OAuth2TokenValidationServiceStub
 import org.wso2.carbon.identity.oauth2.stub.dto.{OAuth2TokenValidationResponseDTO, OAuth2TokenValidationRequestDTO, OAuth2TokenValidationRequestDTO_OAuth2AccessToken}
@@ -93,16 +98,52 @@ object IdentityServiceClient {
 
   /**
    * returns the URI that the user needs to go to to authorize the application
-   * (create an access token for it)
+   * (create an access token for it).
+   *
+   * This uses Grant Type "implicit" (for client-side apps, where there is no client secret)
    */
 
-  def getAuthorizationUri(clientId: String, scope: String, baseUrl: String = "https://127.0.0.1:9443/oauth2"): String = OAuthClientRequest
+  def getAuthorizationUri_Implicit(clientId: String, scope: String, baseUrl: String = "https://127.0.0.1:9443/oauth2"): String = OAuthClientRequest
     .authorizationLocation(baseUrl+"/authorize")
     .setClientId(clientId)
     .setResponseType("token")
     .setScope(scope)
     .setRedirectURI("about:blank")
     .buildQueryMessage().getLocationUri;
+
+
+  /**
+   * returns the URI that the user needs to go to to authorize the application
+   * (create an auth token for it).
+   *
+   * This uses Grant Type "authCode" (to pass on to the server which holds the "client secret").
+   * You can then use exchangeAuthCodeForAccessToken to get the access token.
+   */
+  def getAuthorizationUri_AuthToken(clientId: String, scope: String, redirectUrl: String, baseUrl: String = "https://127.0.0.1:9443/oauth2"): String = OAuthClientRequest
+    .authorizationLocation(baseUrl+"/authorize")
+    .setClientId(clientId)
+    .setResponseType("code")
+    .setScope(scope)
+    .setRedirectURI(redirectUrl)
+    .buildQueryMessage().getLocationUri;
+
+
+  def extractAuthCode(request: HttpServletRequest): String = OAuthAuthzResponse.oauthCodeAuthzResponse(request).getCode()
+
+  def exchangeAuthCodeForAccessToken(authCode: String, clientId: String, clientSecret: String, baseUrl: String = "https://127.0.0.1:9443/oauth2"): String = {
+
+    val tokenRequest = OAuthClientRequest
+      .tokenLocation(baseUrl+"/token")
+      .setGrantType(GrantType.AUTHORIZATION_CODE)
+      .setClientId(clientId)
+      .setClientSecret(clientSecret)
+      .setCode(authCode)
+      .setRedirectURI("about:blank")
+      .buildBodyMessage();
+
+    return getRequiredJSONString(post(tokenRequest), "access_token")
+  }
+
 
   /**
    * retrieves the OpenID user profile
@@ -112,38 +153,46 @@ object IdentityServiceClient {
     = get(new OAuthBearerClientRequest(accessToken.baseUrl + "/userinfo?schema=openid").setAccessToken(accessToken.token).buildHeaderMessage())
 
 
-  // use Commons HttpClient 3, which is a bit outdated, because Axis2 is using that as well
-  private def get(request: OAuthClientRequest): String = {
-    val client = new HttpClient();
-    val get = new GetMethod(request.getLocationUri)
-
-
-    import scala.collection.JavaConversions.mapAsScalaMap
-
+  private def getRequiredJSONString(json: String, key: String) : String = {
     try {
-      for((k,v) <- request.getHeaders){
-         get.setRequestHeader(k, v)
-      }
-      val statusCode = client.executeMethod(get);
-      if (statusCode != 200) {
-        val errorMessage = "failed to get " + request.getLocationUri + ", HTTP status " + statusCode + " " + get.getStatusLine
-        try {
-          throw new IllegalArgumentException( errorMessage + "\n" + get.getResponseBodyAsString(2000))
-        }
-        catch {
-          case e: HttpContentTooLargeException => throw new IllegalArgumentException(errorMessage)
-          case e: Exception => throw e
-        }
-      }
-      return get.getResponseBodyAsString
+      val x = new JSONObject(json);
+      return x.getString("access_token");
     }
-    finally {
-      get.releaseConnection()
+    catch {
+      case e: Exception =>
+        throw new IllegalArgumentException("invalid response, does not contain JSON key "+key+"\n"+json, e);
     }
   }
 
 
+  // use Commons HttpClient 3, which is a bit outdated, because Axis2 is using that as well
+  private def runRequest(httpMethod: HttpMethod, request: OAuthClientRequest): String ={
+    val client = new HttpClient();
+    import scala.collection.JavaConversions.mapAsScalaMap
 
+    try {
+      for((k,v) <- request.getHeaders){
+        httpMethod.setRequestHeader(k, v)
+      }
+      val statusCode = client.executeMethod(httpMethod);
+      if (statusCode != 200) {
+        val errorMessage = "failed to access " + request.getLocationUri + ", HTTP status " + statusCode + " " + httpMethod.getStatusLine
+        throw new IllegalArgumentException( errorMessage + "\n" + httpMethod.getResponseBodyAsString)
+      }
+      return httpMethod.getResponseBodyAsString
+    }
+    finally {
+      httpMethod.releaseConnection()
+    }
+  }
+
+  private def get(request: OAuthClientRequest): String = runRequest(new GetMethod(request.getLocationUri), request)
+
+  private def post(request: OAuthClientRequest): String = {
+    val post = new PostMethod(request.getLocationUri)
+    post.setRequestEntity(new StringRequestEntity(request.getBody, "application/x-www-form-urlencoded", "UTF-8"))
+    return runRequest(post, request)
+  }
 
 }
 
