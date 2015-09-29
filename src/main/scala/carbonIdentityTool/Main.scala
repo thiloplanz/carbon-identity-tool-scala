@@ -38,6 +38,7 @@ object Main {
   )
 
   def main(args: Array[String]) {
+    if (config.hasPath("identityServer.sslCert")) { new SSLKeyPinning(config.getString("identityServer.sslCert")).setDefaultSSLContext() }
 
     args match{
       case Array("askForAccessToken", clientId, scope) => askForAccessToken(clientId, scope)
