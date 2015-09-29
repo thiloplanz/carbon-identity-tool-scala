@@ -21,17 +21,19 @@ import javax.servlet.http.HttpServletRequest
 
 import org.apache.axis2.transport.http.HTTPConstants
 import org.apache.axis2.transport.http.HttpTransportProperties.Authenticator
-import org.apache.commons.httpclient.{HttpMethod, HttpClient}
-import org.apache.commons.httpclient.methods.{StringRequestEntity, PostMethod, GetMethod}
+import org.apache.commons.httpclient.methods.{GetMethod, PostMethod, StringRequestEntity}
+import org.apache.commons.httpclient.{HttpClient, HttpMethod}
 import org.apache.oltu.oauth2.client.request.{OAuthBearerClientRequest, OAuthClientRequest}
 import org.apache.oltu.oauth2.client.response.OAuthAuthzResponse
 import org.apache.oltu.oauth2.common.message.types.GrantType
 import org.json.JSONObject
 import org.wso2.carbon.authenticator.stub.AuthenticationAdminStub
 import org.wso2.carbon.identity.oauth2.stub.OAuth2TokenValidationServiceStub
-import org.wso2.carbon.identity.oauth2.stub.dto.{OAuth2TokenValidationResponseDTO, OAuth2TokenValidationRequestDTO, OAuth2TokenValidationRequestDTO_OAuth2AccessToken}
+import org.wso2.carbon.identity.oauth2.stub.dto.{OAuth2TokenValidationRequestDTO, OAuth2TokenValidationRequestDTO_OAuth2AccessToken, OAuth2TokenValidationResponseDTO}
 import org.wso2.carbon.um.ws.api.WSRealmBuilder
 import org.wso2.carbon.user.api.UserRealm
+
+import scala.collection.mutable
 
 
 object IdentityServiceClient {
@@ -75,6 +77,7 @@ object IdentityServiceClient {
   }
 
 
+
   /**
    * start a new session for the Identity Server SOAP API
    */
@@ -95,6 +98,28 @@ object IdentityServiceClient {
       val claims : Map[String, String] = if (user.claims == null) Map.empty else user.claims
       realm.getUserStoreManager.addUser(user.name, password, user.roles, claims , profile, requirePasswordChange )
   }
+
+  /**
+   * check a user's login credentials (password)
+   */
+  def authenticateUser(realm: UserRealm, username: String, password: String): Boolean =
+    // TODO: do we really have to use an admin call to do this?
+    realm.getUserStoreManager().authenticate(username, password)
+
+
+  /**
+   * get a user's claims
+   */
+  def getUserInfo(realm: UserRealm, username: String, profile: String = null) : CarbonIdentityUserInfo = {
+    // TODO: find out what "profile" does
+    val us = realm.getUserStoreManager
+    val claims = new mutable.HashMap[String, String]()
+    for ( c <- us.getUserClaimValues(username, profile)){
+       claims.put(c.getClaimUri, c.getValue)
+    }
+    return new CarbonIdentityUserInfo(username, us.getRoleListOfUser(username), claims.toMap);
+  }
+
 
   /**
    * returns the URI that the user needs to go to to authorize the application
