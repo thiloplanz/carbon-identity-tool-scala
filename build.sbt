@@ -32,6 +32,7 @@ libraryDependencies += "org.apache.axis2" % "axis2-transport-local" % axis2Versi
 libraryDependencies += "org.apache.axis2" % "axis2-transport-http" % axis2Version
 
 libraryDependencies += "commons-codec" % "commons-codec" % "1.10"
+libraryDependencies += "com.typesafe" % "config" % "1.3.0"
 
 libraryDependencies += "org.apache.oltu.oauth2" % "org.apache.oltu.oauth2.client" % "1.0.0"
 
