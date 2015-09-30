@@ -108,16 +108,32 @@ object IdentityServiceClient {
 
 
   /**
-   * get a user's claims
+   * get a user's claims and roles (by "username")
    */
-  def getUserInfo(realm: UserRealm, username: String, profile: String = null) : CarbonIdentityUserInfo = {
+  def getUserInfo(realm: UserRealm, username: String, profile: String = null) : Option[CarbonIdentityUserInfo] = {
     // TODO: find out what "profile" does
     val us = realm.getUserStoreManager
     val claims = new mutable.HashMap[String, String]()
     for ( c <- us.getUserClaimValues(username, profile)){
        claims.put(c.getClaimUri, c.getValue)
     }
-    return new CarbonIdentityUserInfo(username, us.getRoleListOfUser(username), claims.toMap);
+    if (claims.isEmpty)
+      return None
+    return Some(new CarbonIdentityUserInfo(username, us.getRoleListOfUser(username), claims.toMap));
+  }
+
+  /**
+   * get a user's claims and roles (by user's email)
+   */
+  def getUserInfoByUniqueEmail(realm: UserRealm, email: String, profile: String = null) : Option[CarbonIdentityUserInfo] = {
+    val us = realm.getUserStoreManager
+    // TODO: This is just horrible. LDAP query injection...
+    // There must be a better way
+    // http://stackoverflow.com/q/11933831/14955
+    val usernames = us.listUsers("*)(mail="+email, 2)
+    if (usernames == null || usernames.length == 0) return None
+    if (usernames.length == 1) return getUserInfo(realm, usernames(0), profile)
+    throw new IllegalArgumentException("there is more than one user with email "+email)
   }
 
 

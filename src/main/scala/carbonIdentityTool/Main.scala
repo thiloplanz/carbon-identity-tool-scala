@@ -78,7 +78,8 @@ object Main {
   private def addUser(name: String): Unit ={
     val realm = IdentityServiceClient.loginToAdminServices(admin);
     IdentityServiceClient.addUser(realm,
-      new CarbonIdentityClaimBuilder().withEmail("test@test.com")
+    // TODO: have --email <address> to set the email address (and other claims)
+      new CarbonIdentityClaimBuilder().withEmail(name+"@test.com")
         .buildUserInfo(name),
       null, "password", true)
   }
@@ -86,11 +87,19 @@ object Main {
   private def showUserInfo(name: String): Unit ={
     val realm = IdentityServiceClient.loginToAdminServices(admin);
 
-    val user = IdentityServiceClient.getUserInfo(realm, name)
-    println(name);
-    println(user.claims)
-    println(user.roles.toList)
+    IdentityServiceClient.getUserInfo(realm, name) match {
+      case Some(user) => {
+        println(user.name);
+        println(user.claims)
+        println(user.roles.toList)
+      }
+      case None => println("no such user")
+    }
+
+
   }
+
+
 
   private def checkPassword(name: String, password: String): Unit ={
     val realm = IdentityServiceClient.loginToAdminServices(admin);
