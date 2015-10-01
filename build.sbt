@@ -46,6 +46,7 @@ libraryDependencies += ("org.wso2.carbon.identity" % "org.wso2.carbon.identity.o
 libraryDependencies += ("org.wso2.carbon" % "org.wso2.carbon.um.ws.api" % "4.2.2"
   // this pulls in much more than a web service client needs, so exclude stuff
   exclude("org.wso2.carbon", "carbon-kernel")
+  exclude("org.wso2.carbon", "org.wso2.carbon.logging")
   exclude("org.wso2.carbon", "org.wso2.carbon.core")
   exclude("org.wso2.carbon", "org.wso2.carbon.core.common")
   exclude("org.wso2.carbon", "org.wso2.carbon.user.mgt.common")
