@@ -20,6 +20,7 @@ version := "0.1-SNAPSHOT"
 
 scalaVersion := "2.11.7"
 
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
 
 val axis2Version = "1.6.3"
 val carbonIdentityVersion = "4.5.6"
@@ -33,6 +34,7 @@ libraryDependencies += "org.apache.axis2" % "axis2-transport-http" % axis2Versio
 
 libraryDependencies += "commons-codec" % "commons-codec" % "1.10"
 libraryDependencies += "com.typesafe" % "config" % "1.3.0"
+libraryDependencies += "org.rogach" %% "scallop" % "0.9.5"
 
 libraryDependencies += "org.apache.oltu.oauth2" % "org.apache.oltu.oauth2.client" % "1.0.0"
 

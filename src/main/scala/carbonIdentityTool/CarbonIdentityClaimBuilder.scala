@@ -31,6 +31,11 @@ class CarbonIdentityClaimBuilder {
 
   private def set(key: String, value: String) : this.type = { map += (key -> value); this}
 
+  private def set(key: String, value: Option[String]) : this.type = value match{
+    case Some(v) => set(key, v)
+    case _ => map -= (key); this
+  }
+
   def withGivenName(name: String): this.type = set("http://wso2.org/claims/givenname" , name)
 
   def withLastName(name: String): this.type = set("http://wso2.org/claims/lastname", name)
@@ -87,6 +92,61 @@ class CarbonIdentityClaimBuilder {
 
   def withChallengeQuestion2(question: String): this.type = set("http://wso2.org/claims/challengeQuestion2" , question)
 
+  def withGivenName(name: Option[String]): this.type = set("http://wso2.org/claims/givenname" , name)
+
+  def withLastName(name: Option[String]): this.type = set("http://wso2.org/claims/lastname", name)
+
+  def withOrganization(name: Option[String]): this.type = set("http://wso2.org/claims/organization", name)
+
+  def withStreetAddress(address: Option[String]): this.type = set("http://wso2.org/claims/streetaddress", address)
+
+  def withCountry(name: Option[String]): this.type = set("http://wso2.org/claims/country", name)
+
+  def withEmail(email: Option[String]): this.type = set("http://wso2.org/claims/emailaddress", email  )
+
+  def withTelephoneNumber(number: Option[String]): this.type = set("http://wso2.org/claims/telephone", number)
+
+  def withMobileNumber(number: Option[String]): this.type = set("http://wso2.org/claims/mobile", number)
+
+  def withIM(number: Option[String]): this.type = set("http://wso2.org/claims/im", number)
+
+  def withURL(url: Option[String]) : this.type = set("http://wso2.org/claims/url", url)
+
+  def withGender(gender: Option[String]) : this.type = set("http://wso2.org/claims/gender", gender)
+
+  def withTitle(title: Option[String]) : this.type = set("http://wso2.org/claims/title", title)
+
+  def withRole(role: Option[String]) : this.type = set("http://wso2.org/claims/role", role)
+
+  def withPostalCode(code: Option[String]) : this.type = set("http://wso2.org/claims/postalcode", code)
+
+  def withLocality(locality: Option[String]) : this.type = set("http://wso2.org/claims/locality", locality)
+
+  def withRegion(name: Option[String]): this.type = set("http://wso2.org/claims/region" , name)
+
+  def withBirthDate(name: Option[String]): this.type = set("http://wso2.org/claims/dob" , name)
+
+  def withNickname(name: Option[String]): this.type = set("http://wso2.org/claims/nickname" , name)
+
+  def withStateOrProvince(name: Option[String]): this.type = set("http://wso2.org/claims/stateorprovince" , name)
+
+  def withOtherPhone(number: Option[String]): this.type = set("http://wso2.org/claims/otherphone" , number)
+
+  def withFullName(name: Option[String]): this.type = set("http://wso2.org/claims/fullname" , name)
+
+  def withPrimaryChallengeQuestion(question: Option[String]): this.type = set("http://wso2.org/claims/primaryChallengeQuestion" , question)
+
+  def withChallengeQuestionUris(question: Option[String]): this.type = set("http://wso2.org/claims/challengeQuestionUris" , question)
+
+  def withOneTimePassword(otp: Option[String]): this.type = set("http://wso2.org/claims/oneTimePassword" , otp)
+
+  def withPasswordTimestamp(stamp: Option[String]): this.type = set("http://wso2.org/claims/passwordTimestamp" , stamp)
+
+  def withAccountLocked(locked: Option[String]): this.type = set("http://wso2.org/claims/accountLocked" , locked)
+
+  def withChallengeQuestion1(question: Option[String]): this.type = set("http://wso2.org/claims/challengeQuestion1" , question)
+
+  def withChallengeQuestion2(question: Option[String]): this.type = set("http://wso2.org/claims/challengeQuestion2" , question)
 
   def buildUserInfo(name: String, roles : String*) : CarbonIdentityUserInfo =
       new CarbonIdentityUserInfo(name, roles.toArray, map.toMap)

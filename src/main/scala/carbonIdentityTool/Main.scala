@@ -19,9 +19,9 @@ package carbonIdentityTool
 
 import java.awt.Desktop
 import java.net.URI
-import java.util
 
-import com.typesafe.config.{ConfigFactory, Config}
+import com.typesafe.config.ConfigFactory
+import org.rogach.scallop.{ScallopConf, Subcommand}
 
 object Main {
 
@@ -40,16 +40,50 @@ object Main {
   def main(args: Array[String]) {
     if (config.hasPath("identityServer.sslCert")) { new SSLKeyPinning(config.getString("identityServer.sslCert")).setDefaultSSLContext() }
 
-    args match{
-      case Array("askForAccessToken", clientId, scope) => askForAccessToken(clientId, scope)
-      case Array("askForAuthCode", clientId, scope) => askForAuthCode(clientId, scope)
-      case Array("exchangeAuthCode", clientId, clientSecret, authCode) => exchangeAuthCode(clientId, clientSecret, authCode)
-      case Array("verifyAccessToken", token) => verifyAccessToken(token)
-      case Array("addUser", name) => addUser(name)
-      case Array("showUserInfo", name) => showUserInfo(name)
-      case Array("checkPassword", name, pass) => checkPassword(name, pass)
-      case _ => usage()
+
+    object Args extends ScallopConf(args){
+      val askForAccessToken = new Subcommand("askForAccessToken"){
+         val clientId = trailArg[String]()
+         val scope = trailArg[String]()
+       }
+      val askForAuthCode = new Subcommand("askForAuthCode"){
+        val clientId = trailArg[String]()
+        val scope = trailArg[String]()
+      }
+      val exchangeAuthCode = new Subcommand("exchangeAuthCode"){
+        val clientId = trailArg[String]()
+        val clientSecret = trailArg[String]()
+        val authCode = trailArg[String]()
+      }
+      val verifyAccessToken = new Subcommand("verifyAccessToken"){
+        val token = trailArg[String]()
+      }
+      val addUser = new Subcommand("addUser"){
+        val name = trailArg[String]()
+        val email = opt[String]()
+      }
+      val showUserInfo = new Subcommand("showUserInfo"){
+        val name = trailArg[String]()
+      }
+      val checkPassword = new Subcommand("checkPassword"){
+        val name = trailArg[String]()
+        val password = trailArg[String]()
+      }
     }
+
+
+    import scala.language.reflectiveCalls
+    Args.subcommand match{
+      case Some(Args.askForAccessToken) => askForAccessToken(Args.askForAccessToken.clientId(), Args.askForAccessToken.scope())
+      case Some(Args.askForAuthCode) => askForAuthCode(Args.askForAuthCode.clientId(), Args.askForAuthCode.scope())
+      case Some(Args.exchangeAuthCode) => exchangeAuthCode(Args.exchangeAuthCode.clientId(), Args.exchangeAuthCode.clientSecret(), Args.exchangeAuthCode.authCode())
+      case Some(Args.verifyAccessToken) => verifyAccessToken(Args.verifyAccessToken.token())
+      case Some(Args.addUser) => addUser(Args.addUser.name(), Args.addUser.email.get)
+      case Some(Args.showUserInfo) => showUserInfo(Args.showUserInfo.name())
+      case Some(Args.checkPassword) => checkPassword(Args.checkPassword.name(), Args.checkPassword.password())
+      case _ => Args.printHelp()
+    }
+
 
   }
 
@@ -75,11 +109,11 @@ object Main {
     }
   }
 
-  private def addUser(name: String): Unit ={
+  private def addUser(name: String, email: Option[String]): Unit ={
     val realm = IdentityServiceClient.loginToAdminServices(admin);
     IdentityServiceClient.addUser(realm,
-    // TODO: have --email <address> to set the email address (and other claims)
-      new CarbonIdentityClaimBuilder().withEmail(name+"@test.com")
+    // TODO: other claims, not just --email
+      new CarbonIdentityClaimBuilder().withEmail(email)
         .buildUserInfo(name),
       null, "password", true)
   }
@@ -110,18 +144,6 @@ object Main {
     }
   }
 
-  private def usage() {
-    println("usage: ")
-    println("    carbon-identity-tool <command> [<args>]")
-    println()
-    println("Commands")
-    println("    askForAccessToken <clientId> <scope>")
-    println("    askForAuthCode <clientId>")
-    println("    verifyAccessToken <token>")
-    println("    addUser <name>")
-    println("    showUserInfo <name>")
-    println("    checkPassword <name> <password>")
-    System.exit(1)
-  }
+
 
 }
