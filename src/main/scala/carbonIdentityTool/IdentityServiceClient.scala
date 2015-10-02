@@ -17,10 +17,12 @@
 
 package carbonIdentityTool
 
+
 import javax.servlet.http.HttpServletRequest
 
 import org.apache.axis2.transport.http.HTTPConstants
 import org.apache.axis2.transport.http.HttpTransportProperties.Authenticator
+import org.apache.commons.codec.binary.Base64
 import org.apache.commons.httpclient.methods.{GetMethod, PostMethod, StringRequestEntity}
 import org.apache.commons.httpclient.{HttpClient, HttpMethod}
 import org.apache.oltu.oauth2.client.request.{OAuthBearerClientRequest, OAuthClientRequest}
@@ -171,7 +173,7 @@ object IdentityServiceClient {
 
   def extractAuthCode(request: HttpServletRequest): String = OAuthAuthzResponse.oauthCodeAuthzResponse(request).getCode()
 
-  def exchangeAuthCodeForAccessToken(authCode: String, clientId: String, clientSecret: String, baseUrl: String = "https://127.0.0.1:9443/oauth2"): String = {
+  def exchangeAuthCodeForAccessToken(authCode: String, clientId: String, clientSecret: String, baseUrl: String = "https://127.0.0.1:9443/oauth2"): OAuthAccessToken = {
 
     val tokenRequest = OAuthClientRequest
       .tokenLocation(baseUrl+"/token")
@@ -182,9 +184,25 @@ object IdentityServiceClient {
       .setRedirectURI("about:blank")
       .buildBodyMessage();
 
-    return getRequiredJSONString(post(tokenRequest), "access_token")
+    val (token, json) = getRequiredJSONString(post(tokenRequest), "access_token")
+    val refreshToken = if (json.has("refresh_token")) json.getString("refresh_token") else null
+    return new OAuthAccessToken(token, refreshToken, baseUrl)
   }
 
+  def refreshAccessToken(refreshToken: String, clientId: String, clientSecret: String, baseUrl: String  = "https://127.0.0.1:9443/oauth2") : OAuthAccessToken = {
+    val tokenRequest = OAuthClientRequest
+      .tokenLocation(baseUrl+"/token")
+      .setGrantType(GrantType.REFRESH_TOKEN)
+      .setClientId(clientId)
+      .setClientSecret(clientSecret)
+      .setRefreshToken(refreshToken)
+      .setRedirectURI("about:blank")
+      .buildBodyMessage()
+
+    val (token, json) = getRequiredJSONString(post(tokenRequest), "access_token")
+    val refresh = if (json.has("refresh_token")) json.getString("refresh_token") else refreshToken
+    return new OAuthAccessToken(token, refresh, baseUrl)
+  }
 
   /**
    * retrieves the OpenID user profile
@@ -194,10 +212,10 @@ object IdentityServiceClient {
     = get(new OAuthBearerClientRequest(accessToken.baseUrl + "/userinfo?schema=openid").setAccessToken(accessToken.token).buildHeaderMessage())
 
 
-  private def getRequiredJSONString(json: String, key: String) : String = {
+  private def getRequiredJSONString(json: String, key: String) : (String, JSONObject) = {
     try {
       val x = new JSONObject(json);
-      return x.getString("access_token");
+      return (x.getString(key), x);
     }
     catch {
       case e: Exception =>
@@ -247,6 +265,7 @@ final class IdentityServiceAdminCredentials
 final class OAuthAccessToken
   (
     val token: String,
+    val refreshToken: String = null,
     val baseUrl: String = "https://127.0.0.1:9443/oauth2" )
 
 

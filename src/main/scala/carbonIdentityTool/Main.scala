@@ -40,50 +40,53 @@ object Main {
   def main(args: Array[String]) {
     if (config.hasPath("identityServer.sslCert")) { new SSLKeyPinning(config.getString("identityServer.sslCert")).setDefaultSSLContext() }
 
-
     object Args extends ScallopConf(args){
-      val askForAccessToken = new Subcommand("askForAccessToken"){
+      val askForAccessToken = new Subcommand("askForAccessToken") with Runnable{
          val clientId = trailArg[String]()
          val scope = trailArg[String]()
+         override def run() = _askForAccessToken(clientId(), scope())
        }
-      val askForAuthCode = new Subcommand("askForAuthCode"){
+      val askForAuthCode = new Subcommand("askForAuthCode") with Runnable{
         val clientId = trailArg[String]()
         val scope = trailArg[String]()
+        override def run() = _askForAuthCode(clientId(), scope())
       }
-      val exchangeAuthCode = new Subcommand("exchangeAuthCode"){
+      val exchangeAuthCode = new Subcommand("exchangeAuthCode") with Runnable{
         val clientId = trailArg[String]()
         val clientSecret = trailArg[String]()
         val authCode = trailArg[String]()
+        override def run() = _exchangeAuthCode(clientId(), clientSecret(), authCode())
       }
-      val verifyAccessToken = new Subcommand("verifyAccessToken"){
+      val refreshAccessToken = new Subcommand("refreshAccessToken") with Runnable{
+        val clientId = trailArg[String]()
+        val clientSecret = trailArg[String]()
+        val refreshToken = trailArg[String]()
+        override def run() = _refreshAccessToken(clientId(), clientSecret(), refreshToken())
+      }
+      val verifyAccessToken = new Subcommand("verifyAccessToken") with Runnable{
         val token = trailArg[String]()
+        override def run() = _verifyAccessToken(token())
       }
-      val addUser = new Subcommand("addUser"){
+      val addUser = new Subcommand("addUser") with Runnable{
         val name = trailArg[String]()
         val email = opt[String]()
+        override def run() = _addUser(name(), email.get)
       }
-      val showUserInfo = new Subcommand("showUserInfo"){
+      val showUserInfo = new Subcommand("showUserInfo") with Runnable{
         val name = trailArg[String]()
+        override def run() = _showUserInfo(name())
       }
-      val checkPassword = new Subcommand("checkPassword"){
+      val checkPassword = new Subcommand("checkPassword") with Runnable{
         val name = trailArg[String]()
         val password = trailArg[String]()
+        override def run() = _checkPassword(name(), password())
       }
     }
 
-
-    import scala.language.reflectiveCalls
     Args.subcommand match{
-      case Some(Args.askForAccessToken) => askForAccessToken(Args.askForAccessToken.clientId(), Args.askForAccessToken.scope())
-      case Some(Args.askForAuthCode) => askForAuthCode(Args.askForAuthCode.clientId(), Args.askForAuthCode.scope())
-      case Some(Args.exchangeAuthCode) => exchangeAuthCode(Args.exchangeAuthCode.clientId(), Args.exchangeAuthCode.clientSecret(), Args.exchangeAuthCode.authCode())
-      case Some(Args.verifyAccessToken) => verifyAccessToken(Args.verifyAccessToken.token())
-      case Some(Args.addUser) => addUser(Args.addUser.name(), Args.addUser.email.get)
-      case Some(Args.showUserInfo) => showUserInfo(Args.showUserInfo.name())
-      case Some(Args.checkPassword) => checkPassword(Args.checkPassword.name(), Args.checkPassword.password())
+      case Some(command: Runnable) => command.run()
       case _ => Args.printHelp()
     }
-
 
   }
 
@@ -91,25 +94,33 @@ object Main {
    * opens the default web browser with the authorization page
    * when granted, the access token will show up in the URL
    */
-  private def askForAccessToken(clientId: String, scope:String) =
+  private def _askForAccessToken(clientId: String, scope:String) =
     Desktop.getDesktop.browse(new URI(IdentityServiceClient.getAuthorizationUri_Implicit(clientId, scope, oauthUrl)))
 
-  private def askForAuthCode(clientId: String, scope: String) =
+  private def _askForAuthCode(clientId: String, scope: String) =
     Desktop.getDesktop.browse(new URI(IdentityServiceClient.getAuthorizationUri_AuthToken(clientId, scope, "about:blank")))
 
-  private def exchangeAuthCode(clientId: String, clientSecret: String, authCode: String): Unit ={
-    println(IdentityServiceClient.exchangeAuthCodeForAccessToken(authCode, clientId, clientSecret));
+  private def _exchangeAuthCode(clientId: String, clientSecret: String, authCode: String): Unit ={
+    val token = IdentityServiceClient.exchangeAuthCodeForAccessToken(authCode, clientId, clientSecret);
+    println("Access token: "+token.token)
+    if (token.refreshToken != null) println("Refresh token: "+token.refreshToken)
   }
 
-  private def verifyAccessToken(token: String) {
-    val accessToken = new OAuthAccessToken(token, oauthUrl)
+  private def _refreshAccessToken(clientId: String, clientSecret: String, refreshToken: String): Unit = {
+    val token = IdentityServiceClient.refreshAccessToken(refreshToken, clientId, clientSecret);
+    println("Access token: "+token.token)
+    if (token.refreshToken != null) println("Refresh token: "+token.refreshToken)
+  }
+
+  private def _verifyAccessToken(token: String) {
+    val accessToken = new OAuthAccessToken(token, null, oauthUrl)
     IdentityServiceClient.verifyAccessToken(admin, accessToken) match {
-      case Right(tokenInfo) => println("token for "+ tokenInfo.getAuthorizedUser+" accepted")
+      case Right(tokenInfo) => println("token for "+ tokenInfo.getAuthorizedUser+" accepted with scope "+ tokenInfo.getScope.mkString(", "))
       case Left(error) => println("token rejected: "+error)
     }
   }
 
-  private def addUser(name: String, email: Option[String]): Unit ={
+  private def _addUser(name: String, email: Option[String]): Unit ={
     val realm = IdentityServiceClient.loginToAdminServices(admin);
     IdentityServiceClient.addUser(realm,
     // TODO: other claims, not just --email
@@ -118,7 +129,7 @@ object Main {
       null, "password", true)
   }
 
-  private def showUserInfo(name: String): Unit ={
+  private def _showUserInfo(name: String): Unit ={
     val realm = IdentityServiceClient.loginToAdminServices(admin);
 
     IdentityServiceClient.getUserInfo(realm, name) match {
@@ -135,7 +146,7 @@ object Main {
 
 
 
-  private def checkPassword(name: String, password: String): Unit ={
+  private def _checkPassword(name: String, password: String): Unit ={
     val realm = IdentityServiceClient.loginToAdminServices(admin);
     if (IdentityServiceClient.authenticateUser(realm, name, password)){
       println("password accepted")
