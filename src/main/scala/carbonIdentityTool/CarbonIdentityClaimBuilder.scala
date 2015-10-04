@@ -152,3 +152,70 @@ class CarbonIdentityClaimBuilder {
       new CarbonIdentityUserInfo(name, roles.toArray, map.toMap)
 
 }
+
+
+/**
+ * getters for extracting "carbon schema" claim values
+ */
+
+object CarbonIdentityClaims{
+  
+  private def get(claims: Map[String, String], claim: String) : Option[String] = claims.get(claim)
+  
+  def getGivenName(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/givenname" ) 
+
+  def getLastName(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/lastname")
+
+  def getOrganization(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/organization")
+
+  def getStreetAddress(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/streetaddress")
+
+  def getCountry(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/country")
+
+  def getEmail(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/emailaddress")
+
+  def getTelephoneNumber(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/telephone")
+
+  def getMobileNumber(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/mobile")
+
+  def getIM(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/im")
+
+  def getURL(user: CarbonIdentityUserInfo) : Option[String] = get(user.claims, "http://wso2.org/claims/url")
+
+  def getGender(user: CarbonIdentityUserInfo) : Option[String] = get(user.claims, "http://wso2.org/claims/gender")
+
+  def getTitle(user: CarbonIdentityUserInfo) : Option[String] = get(user.claims, "http://wso2.org/claims/title")
+
+  def getRole(user: CarbonIdentityUserInfo) : Option[String] = get(user.claims, "http://wso2.org/claims/role")
+
+  def getPostalCode(user: CarbonIdentityUserInfo) : Option[String] = get(user.claims, "http://wso2.org/claims/postalcode")
+
+  def getLocality(user: CarbonIdentityUserInfo) : Option[String] = get(user.claims, "http://wso2.org/claims/locality")
+
+  def getRegion(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/region" )
+
+  def getBirthDate(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/dob" )
+
+  def getNickname(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/nickname" )
+
+  def getStateOrProvince(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/stateorprovince" )
+
+  def getOtherPhone(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/otherphone" )
+
+  def getFullName(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/fullname" )
+
+  def getPrimaryChallengeQuestion(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/primaryChallengeQuestion")
+
+  def getChallengeQuestionUris(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/challengeQuestionUris")
+
+  def getOneTimePassword(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/oneTimePassword")
+
+  def getPasswordTimestamp(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/passwordTimestamp")
+
+  def getAccountLocked(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/accountLocked")
+
+  def getChallengeQuestion1(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/challengeQuestion1" )
+
+  def getChallengeQuestion2(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/challengeQuestion2" )
+
+}
