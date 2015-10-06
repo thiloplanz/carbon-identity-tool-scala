@@ -72,6 +72,10 @@ object Main {
         val email = opt[String]()
         override def run() = _addUser(name(), email.get)
       }
+      val deleteUser = new Subcommand("deleteUser") with Runnable {
+        val name = trailArg[String]()
+        override def run() = _deleteUser(name())
+      }
       val showUserInfo = new Subcommand("showUserInfo") with Runnable{
         val name = trailArg[String](required = false)
         val email = opt[String]()
@@ -129,6 +133,9 @@ object Main {
         .buildUserInfo(name),
       null, "password", true)
   }
+
+  private def _deleteUser(name: String) =
+    IdentityServiceClient.deleteUser(IdentityServiceClient.loginToAdminServices(admin), name)
 
   private def _showUserInfo(name: Option[String], email: Option[String]): Unit ={
     val realm = IdentityServiceClient.loginToAdminServices(admin);

@@ -101,6 +101,14 @@ object IdentityServiceClient {
       realm.getUserStoreManager.addUser(user.name, password, user.roles, claims , profile, requirePasswordChange )
   }
 
+
+  /**
+   * Uses the Carbon IdentityServer SOAP API to delete a new user
+   */
+  def deleteUser(realm: UserRealm, username: String) =
+    realm.getUserStoreManager.deleteUser(username)
+
+
   /**
    * check a user's login credentials (password)
    */
@@ -116,6 +124,7 @@ object IdentityServiceClient {
     // TODO: find out what "profile" does
     val us = realm.getUserStoreManager
     val claims = new mutable.HashMap[String, String]()
+    // TODO: this throws an AxisFault exception when the user does not exist, we should catch it
     for ( c <- us.getUserClaimValues(username, profile)){
        claims.put(c.getClaimUri, c.getValue)
     }
