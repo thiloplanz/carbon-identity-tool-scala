@@ -125,18 +125,28 @@ object IdentityServiceClient {
   }
 
   /**
+   * get a username by email
+   */
+  def getUserNameByUniqueEmail(realm: UserRealm, email: String, profile: String = null) : Option[String] =
+  // TODO: This is just horrible. LDAP query injection...
+  // There must be a better way
+  // http://stackoverflow.com/q/11933831/14955
+    realm.getUserStoreManager.listUsers("*)(mail="+email, 2) match {
+      case null => return None
+      case Array() => return None
+      case Array(name) => return Some(name)
+      case _ => throw new IllegalArgumentException("there is more than one user with email "+email)
+  }
+
+  /**
    * get a user's claims and roles (by user's email)
    */
-  def getUserInfoByUniqueEmail(realm: UserRealm, email: String, profile: String = null) : Option[CarbonIdentityUserInfo] = {
-    val us = realm.getUserStoreManager
-    // TODO: This is just horrible. LDAP query injection...
-    // There must be a better way
-    // http://stackoverflow.com/q/11933831/14955
-    val usernames = us.listUsers("*)(mail="+email, 2)
-    if (usernames == null || usernames.length == 0) return None
-    if (usernames.length == 1) return getUserInfo(realm, usernames(0), profile)
-    throw new IllegalArgumentException("there is more than one user with email "+email)
-  }
+  def getUserInfoByUniqueEmail(realm: UserRealm, email: String, profile: String = null) : Option[CarbonIdentityUserInfo] =
+    getUserNameByUniqueEmail(realm, email, profile) match {
+      case None => None
+      case Some(name) => getUserInfo(realm, name, profile)
+    }
+
 
 
   /**

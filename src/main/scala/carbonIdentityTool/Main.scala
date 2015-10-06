@@ -73,8 +73,9 @@ object Main {
         override def run() = _addUser(name(), email.get)
       }
       val showUserInfo = new Subcommand("showUserInfo") with Runnable{
-        val name = trailArg[String]()
-        override def run() = _showUserInfo(name())
+        val name = trailArg[String](required = false)
+        val email = opt[String]()
+        override def run() = _showUserInfo(name.get, email.get)
       }
       val checkPassword = new Subcommand("checkPassword") with Runnable{
         val name = trailArg[String]()
@@ -129,18 +130,22 @@ object Main {
       null, "password", true)
   }
 
-  private def _showUserInfo(name: String): Unit ={
+  private def _showUserInfo(name: Option[String], email: Option[String]): Unit ={
     val realm = IdentityServiceClient.loginToAdminServices(admin);
+    val userInfo = name match {
+      case Some(name) => IdentityServiceClient.getUserInfo(realm, name)
+      case None => IdentityServiceClient.getUserInfoByUniqueEmail(realm, email.get)
+    }
 
-    IdentityServiceClient.getUserInfo(realm, name) match {
+    userInfo match {
       case Some(user) => {
         println(user.name);
         println(user.claims)
         println(user.roles.toList)
       }
-      case None => println("no such user")
+      case None =>
+        println("no such user")
     }
-
 
   }
 
