@@ -22,7 +22,6 @@ import javax.servlet.http.HttpServletRequest
 
 import org.apache.axis2.transport.http.HTTPConstants
 import org.apache.axis2.transport.http.HttpTransportProperties.Authenticator
-import org.apache.commons.codec.binary.Base64
 import org.apache.commons.httpclient.methods.{GetMethod, PostMethod, StringRequestEntity}
 import org.apache.commons.httpclient.{HttpClient, HttpMethod}
 import org.apache.oltu.oauth2.client.request.{OAuthBearerClientRequest, OAuthClientRequest}
@@ -32,7 +31,7 @@ import org.json.JSONObject
 import org.wso2.carbon.authenticator.stub.AuthenticationAdminStub
 import org.wso2.carbon.identity.oauth2.stub.OAuth2TokenValidationServiceStub
 import org.wso2.carbon.identity.oauth2.stub.dto.{OAuth2TokenValidationRequestDTO, OAuth2TokenValidationRequestDTO_OAuth2AccessToken, OAuth2TokenValidationResponseDTO}
-import org.wso2.carbon.um.ws.api.WSRealmBuilder
+import org.wso2.carbon.um.ws.api.{WSRealmBuilder, WSUserStoreManager}
 import org.wso2.carbon.user.api.UserRealm
 
 import scala.collection.mutable
@@ -137,10 +136,7 @@ object IdentityServiceClient {
    * get a username by email
    */
   def getUserNameByUniqueEmail(realm: UserRealm, email: String, profile: String = null) : Option[String] =
-  // TODO: This is just horrible. LDAP query injection...
-  // There must be a better way
-  // http://stackoverflow.com/q/11933831/14955
-    realm.getUserStoreManager.listUsers("*)(mail="+email, 2) match {
+    realm.getUserStoreManager.asInstanceOf[WSUserStoreManager].getUserList("email", email, profile) match {
       case null => return None
       case Array() => return None
       case Array(name) => return Some(name)
