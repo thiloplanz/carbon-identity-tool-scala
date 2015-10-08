@@ -37,6 +37,8 @@ object Main {
      host
   )
 
+  private lazy val session = IdentityServiceClient.loginToAdminServices(admin)
+
   def main(args: Array[String]) {
     if (config.hasPath("identityServer.sslCert")) { new SSLKeyPinning(config.getString("identityServer.sslCert")).setDefaultSSLContext() }
 
@@ -98,6 +100,11 @@ object Main {
         val password = trailArg[String]()
         override def run() = _checkPassword(name(), password())
       }
+      val changePassword = new Subcommand("changePassword") with Runnable {
+        val name = trailArg[String]()
+        val password = trailArg[String]()
+        override def run() = _changePassword(name(), password())
+      }
     }
 
     Args.subcommand match{
@@ -137,29 +144,27 @@ object Main {
     }
   }
 
-  private def _addUser(name: String, email: Option[String]): Unit ={
-    val realm = IdentityServiceClient.loginToAdminServices(admin);
-    IdentityServiceClient.addUser(realm,
+  private def _addUser(name: String, email: Option[String]) =
+    IdentityServiceClient.addUser(session,
     // TODO: other claims, not just --email
       new CarbonIdentityClaimBuilder().withEmail(email)
         .buildUserInfo(name),
       null, "password", true)
-  }
+
 
   private def _deleteUser(name: String) =
-    IdentityServiceClient.deleteUser(IdentityServiceClient.loginToAdminServices(admin), name)
+    IdentityServiceClient.deleteUser(session, name)
 
   private def _deleteClaims(name: String, claims: List[String]) =
-    IdentityServiceClient.deleteClaims(IdentityServiceClient.loginToAdminServices(admin), name, null, claims:_*)
+    IdentityServiceClient.deleteClaims(session, name, null, claims:_*)
 
   private def _updateClaim(name: String, claim: String, value: String) =
-    IdentityServiceClient.updateClaims(IdentityServiceClient.loginToAdminServices(admin), name, null, Map(claim -> value))
+    IdentityServiceClient.updateClaims(session, name, null, Map(claim -> value))
 
-  private def _showUserInfo(name: Option[String], email: Option[String]): Unit ={
-    val realm = IdentityServiceClient.loginToAdminServices(admin);
+  private def _showUserInfo(name: Option[String], email: Option[String]) {
     val userInfo = name match {
-      case Some(name) => IdentityServiceClient.getUserInfo(realm, name)
-      case None => IdentityServiceClient.getUserInfoByUniqueEmail(realm, email.get)
+      case Some(name) => IdentityServiceClient.getUserInfo(session, name)
+      case None => IdentityServiceClient.getUserInfoByUniqueEmail(session, email.get)
     }
 
     userInfo match {
@@ -176,14 +181,16 @@ object Main {
 
 
 
-  private def _checkPassword(name: String, password: String): Unit ={
-    val realm = IdentityServiceClient.loginToAdminServices(admin);
-    if (IdentityServiceClient.authenticateUser(realm, name, password)){
+  private def _checkPassword(name: String, password: String) =
+    if (IdentityServiceClient.authenticateUser(session, name, password)){
       println("password accepted")
     }else{
       println("password rejected")
     }
-  }
+
+
+  private def _changePassword(name: String, password: String) =
+    IdentityServiceClient.changePassword(session, name, password)
 
 
 

@@ -130,6 +130,13 @@ object IdentityServiceClient {
     // TODO: do we really have to use an admin call to do this?
     realm.getUserStoreManager().authenticate(username, password)
 
+  /**
+   * change a user's password
+   */
+  def changePassword(realm: UserRealm, username: String, newPassword: String) {
+    // TODO: do we really have to use an admin call to do this?
+      realm.getUserStoreManager.updateCredentialByAdmin(username, newPassword)
+  }
 
   /**
    * get a user's claims and roles (by "username")
