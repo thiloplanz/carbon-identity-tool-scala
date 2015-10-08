@@ -109,6 +109,21 @@ object IdentityServiceClient {
 
 
   /**
+   * update claim values
+   */
+  def updateClaims(realm: UserRealm, user: String, profile: String, claims: Map[String, String]) {
+    import scala.collection.JavaConversions.mapAsJavaMap
+    realm.getUserStoreManager.setUserClaimValues(user, claims, profile)
+  }
+
+  /**
+   * delete claim values
+   */
+  def deleteClaims(realm: UserRealm, user: String, profile: String, claims: String*) {
+    realm.getUserStoreManager.deleteUserClaimValues(user, claims.toArray, profile);
+  }
+
+  /**
    * check a user's login credentials (password)
    */
   def authenticateUser(realm: UserRealm, username: String, password: String): Boolean =

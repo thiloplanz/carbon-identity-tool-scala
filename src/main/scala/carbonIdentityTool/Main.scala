@@ -76,6 +76,18 @@ object Main {
         val name = trailArg[String]()
         override def run() = _deleteUser(name())
       }
+      val deleteClaims = new Subcommand("deleteClaims") with Runnable {
+        val name = trailArg[String]()
+        val claims = trailArg[List[String]]()
+        override def run() = _deleteClaims(name(), claims())
+      }
+      val updateClaim = new Subcommand("updateClaim") with Runnable {
+        val name = trailArg[String]()
+        val claim = trailArg[String]()
+        val value = trailArg[String]()
+        override def run() = _updateClaim(name(), claim(), value())
+      }
+
       val showUserInfo = new Subcommand("showUserInfo") with Runnable{
         val name = trailArg[String](required = false)
         val email = opt[String]()
@@ -136,6 +148,12 @@ object Main {
 
   private def _deleteUser(name: String) =
     IdentityServiceClient.deleteUser(IdentityServiceClient.loginToAdminServices(admin), name)
+
+  private def _deleteClaims(name: String, claims: List[String]) =
+    IdentityServiceClient.deleteClaims(IdentityServiceClient.loginToAdminServices(admin), name, null, claims:_*)
+
+  private def _updateClaim(name: String, claim: String, value: String) =
+    IdentityServiceClient.updateClaims(IdentityServiceClient.loginToAdminServices(admin), name, null, Map(claim -> value))
 
   private def _showUserInfo(name: Option[String], email: Option[String]): Unit ={
     val realm = IdentityServiceClient.loginToAdminServices(admin);
