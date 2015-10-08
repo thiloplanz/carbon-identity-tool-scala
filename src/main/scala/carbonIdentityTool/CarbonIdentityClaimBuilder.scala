@@ -86,7 +86,7 @@ class CarbonIdentityClaimBuilder {
 
   def withPasswordTimestamp(stamp: String): this.type = set("http://wso2.org/claims/passwordTimestamp" , stamp)
 
-  def withAccountLocked(locked: String): this.type = set("http://wso2.org/claims/accountLocked" , locked)
+  def withAccountLocked(locked: String): this.type = set("http://wso2.org/claims/identity/accountLocked" , locked)
 
   def withChallengeQuestion1(question: String): this.type = set("http://wso2.org/claims/challengeQuestion1" , question)
 
@@ -142,7 +142,7 @@ class CarbonIdentityClaimBuilder {
 
   def withPasswordTimestamp(stamp: Option[String]): this.type = set("http://wso2.org/claims/passwordTimestamp" , stamp)
 
-  def withAccountLocked(locked: Option[String]): this.type = set("http://wso2.org/claims/accountLocked" , locked)
+  def withAccountLocked(locked: Option[String]): this.type = set("http://wso2.org/claims/identity/accountLocked" , locked)
 
   def withChallengeQuestion1(question: Option[String]): this.type = set("http://wso2.org/claims/challengeQuestion1" , question)
 
@@ -212,7 +212,7 @@ object CarbonIdentityClaims{
 
   def getPasswordTimestamp(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/passwordTimestamp")
 
-  def getAccountLocked(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/accountLocked")
+  def getAccountLocked(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/identity/accountLocked")
 
   def getChallengeQuestion1(user: CarbonIdentityUserInfo): Option[String] = get(user.claims, "http://wso2.org/claims/challengeQuestion1" )
 
